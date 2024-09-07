@@ -1,97 +1,172 @@
-//console.log("All hail shashKing!!");
-
-// Import Express Module
+// Import the required modules (express and body-parser)
 import express from 'express';
 import bodyParser from 'body-parser';
 
 // Create an Express app instance
 const app = express();
 
-
+// Use body-parser to parse incoming JSON requests
 app.use(bodyParser.json());
 
-// specify the port for the server
+// Define the port the server will listen on
 const port = 3000;
 
-// creating a friends object with name key and their status as values
-const friends = {
-    'james': 'friend',
-    'Larry': 'friend',
-    'Lucy': 'friend',
-    'banana': 'enemy'
+// Define five users with their respective passwords for authentication
+const accounts = ['james', 'larry', 'lucy', 'banana', 'alex'];
+const credentials = {
+  james: 'password123', // james's password
+  larry: 'password456', // larry's password
+  lucy: 'password789',  // lucy's password
+  banana: 'password101', // banana's password
+  alex: 'password202'   // alex's password
+};
+
+// Define a relationship structure that holds each user's relationship status with other users
+const relationships = {
+  james: { larry: 'friend', lucy: 'friend', banana: 'friend', alex: 'stranger' },
+  larry: { james: 'friend', lucy: 'stranger', banana: 'friend', alex: 'stranger' },
+  lucy: { james: 'stranger', larry: 'friend', banana: 'friend', alex: 'friend' },
+  banana: { james: 'friend', larry: 'stranger', lucy: 'stranger', alex: 'stranger' },
+  alex: { james: 'stranger', larry: 'friend', lucy: 'friend', banana: 'friend' }
+};
+
+// Middleware function to authenticate the user
+function authenticate(req, res, next) {
+  const { username, password } = req.body; // Extract username and password from the request body
+
+  // Validate if the username exists and password matches
+  if (!accounts.includes(username) || credentials[username] !== password) {
+    return res.status(401).send({ error: 'Authentication failed. Invalid username or password.' });
+  }
+
+  // If authentication is successful, attach the username to the request and proceed to the next middleware
+  req.user = username;
+  next();
 }
 
+// Route to get all relationship statuses (GET request to /relationships)
+app.get('/relationships', authenticate, (req, res) => {
+  res.status(200).send(relationships);
+});
 
-// Route to get a list of all friends (GET request to /friends)
-app.get('/friends', (req, res) => {
-    // Send the entire friends object as a JSON response with a status code of 200 (OK)
-    res.status(200).send(friends);
-  });
-  
-  // Route to get details of a specific friend by name (GET request to /friends/:name)
-  app.get('/friends/:name', (req, res) => {
-    const { name } = req.params; // Extract the name parameter from the request URL
-    // Check if the name exists in the friends object and if a name is provided
-    if (!name || !(name in friends)) {
-      // If the name is missing or not found, send a 404 Not Found status code with no content
-      return res.sendStatus(404);
+// Route to get the relationship status for a specific user (GET request to /relationships/:name)
+app.get('/relationships/:name', authenticate, (req, res) => {
+  const { name } = req.params;
+
+  if (!accounts.includes(name)) {
+    return res.status(404).send({ error: 'User not found.' });
+  }
+
+  res.status(200).send(relationships[name]);
+});
+
+// Route to modify the relationship status between two users (PATCH request to /setstatus)
+app.patch('/setstatus', authenticate, (req, res) => {
+  const { target, status } = req.body;
+  const user = req.user;
+
+  if (!accounts.includes(target)) {
+    return res.status(400).send({ error: 'Invalid target.' });
+  }
+
+  relationships[user][target] = status;
+  res.status(200).send(relationships);
+});
+
+// Route to reset all relationships to "stranger" for the authenticated user (POST request to /reset)
+app.post('/reset', authenticate, (req, res) => {
+  const user = req.user;
+
+  accounts.forEach(target => {
+    if (user !== target) {
+      relationships[user][target] = 'stranger';
     }
-  
-    // Send the friend's information as a JSON response with a status code of 200 (OK)
-    res.status(200).send({ [name]: friends[name] }); // Use bracket notation for dynamic property access
-  });
-  
-  // Route to add a new friend (POST request to /addfriend)
-  app.post('/addfriend', (req, res) => {
-    const { name, status } = req.body; // Extract name and status from the request body
-  
-    // Add the new friend to the friends object with the provided name and status
-    friends[name] = status;
-  
-    // Send the updated friends object as a JSON response with a status code of 200 (OK)
-    res.status(200).send(friends);
-  });
-  
-  // Route to change the status of an existing friend (PATCH request to /changestatus)
-  app.patch('/changestatus', (req, res) => {
-    const {name, newStatus } = req.body; // Extract name and new status from the request body
-  
-    // Check if the friend exists
-    if (!(name in friends)) {
-      // If the name is not found, send a 404 Not Found status code with no content
-      return res.sendStatus(404);
-    }
-  
-    // Update the friend's status in the friends object
-    friends[name] = newStatus;
-  
-    // Send the updated friends object as a JSON response with a status code of 200 (OK)
-    res.status(200).send(friends);
-  });
-  
-  // Route to delete a friend (DELETE request to /friends)
-  app.delete('/friends', (req, res) => {
-    const { name } = req.body; // Extract the name to delete from the request body
-  
-    // Check if the friend exists
-    if (!(name in friends)) {
-      // If the name is not found, send a 404 Not Found status code with no content
-      return res.sendStatus(404);
-    }
-  
-    // Delete the friend from the friends object
-    delete friends[name];
-  
-    // Send the updated friends object as a JSON response with a status code of 200 (OK)
-    res.status(200).send(friends);
   });
 
-  
+  res.status(200).send({ message: 'All relationships reset to stranger.', relationships });
+});
 
-  //start the server and listen for incoming request on the specified port
-  app.listen(port, ()=> {
-    console.log(`Server has started on port: ${port}`);
 
+// New Routes
+
+// 1. Route to show accounts which the authenticated user is friends with (GET /friends)
+app.get('/friends', authenticate, (req, res) => {
+  const user = req.user;
+  const friends = Object.keys(relationships[user]).filter(
+    target => relationships[user][target] === 'friend'
+  );
+  res.status(200).send({ friends });
+});
+
+// 2. Route to show accounts where other users are friends with the authenticated user (GET /friendsOfMe)
+app.get('/friendsOfMe', authenticate, (req, res) => {
+  const user = req.user;
+  const friendsOfMe = accounts.filter(
+    target => relationships[target][user] === 'friend'
+  );
+  res.status(200).send({ friendsOfMe });
+});
+
+// 3. Route to show mutual friendships (GET /mutualFriends)
+app.get('/mutualFriends', authenticate, (req, res) => {
+  const user = req.user;
+  const mutualFriends = accounts.filter(
+    target => relationships[user][target] === 'friend' && relationships[target][user] === 'friend'
+  );
+  res.status(200).send({ mutualFriends });
+});
+
+// Route to get users who are friends with the authenticated user, but the authenticated user isn't friends with them
+app.get('/pendingFriends', authenticate, (req, res) => {
+  const user = req.user; // Get the authenticated user from the request
+
+  // Find users who consider the authenticated user a friend, but the authenticated user isn't friends with them
+  const pendingFriends = accounts.filter(target => {
+    return relationships[target][user] === 'friend' && relationships[user][target] !== 'friend';
   });
 
+  // Send the pending friends list
+  res.status(200).send({ pendingFriends });
+});
 
+// Route to get users who are neither friends with the authenticated user nor have considered them a friend
+app.get('/nonFriends', authenticate, (req, res) => {
+  const user = req.user; // Get the authenticated user from the request
+
+  // Find users who are neither friends with the authenticated user nor have considered them a friend
+  const nonFriends = accounts.filter(target => {
+    return relationships[user][target] !== 'friend' && relationships[target][user] !== 'friend';
+  });
+
+  // Send the non-friends list
+  res.status(200).send({ nonFriends });
+});
+
+
+// Start the server and listen for incoming requests on the specified port
+app.listen(port, () => {
+  console.log(relationships.james.larry);
+  const jamesToLarry = relationships.james.larry;
+console.log(jamesToLarry); // Output: 'friend'
+
+
+console.log(Object.keys(relationships.james).length); // Output: 4
+
+
+
+console.log(Object.keys(relationships).length); // Output: 5
+
+//////
+const relationHasJamesKey = 'james' in relationships;
+console.log(relationHasJamesKey); // Output: true
+
+const hasJamesKeyRelation = relationships.hasOwnProperty('james');
+console.log(hasJamesKeyRelation); // Output: true
+
+const hasFriend = Object.values(relationships.james).includes('friend');
+console.log(hasFriend); // Output: true
+
+
+  console.log(`Server started on port: ${port}`);
+ 
+});
