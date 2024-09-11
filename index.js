@@ -12,22 +12,22 @@ app.use(bodyParser.json());
 const port = 3000;
 
 // Define five users with their respective passwords for authentication
-const accounts = ['james', 'larry', 'lucy', 'banana', 'alex'];
+const accounts = ['james', 'harry', 'lucy', 'dobby', 'lupin'];
 const credentials = {
-  james: 'password123', // james's password
-  larry: 'password456', // larry's password
-  lucy: 'password789',  // lucy's password
-  banana: 'password101', // banana's password
-  alex: 'password202'   // alex's password
+  james: 'pwda', // james's password
+  harry: 'pwdb', // harry's password
+  lucy: 'pwdc',  // lucy's password
+  dobby: 'password101', // dobby's password password101
+  lupin: 'password202'   // lupin's password
 };
 
 // Define a relationship structure that holds each user's relationship status with other users
 const relationships = {
-  james: { larry: 'friend', lucy: 'friend', banana: 'friend', alex: 'stranger' },
-  larry: { james: 'friend', lucy: 'stranger', banana: 'friend', alex: 'stranger' },
-  lucy: { james: 'stranger', larry: 'friend', banana: 'friend', alex: 'friend' },
-  banana: { james: 'friend', larry: 'stranger', lucy: 'stranger', alex: 'stranger' },
-  alex: { james: 'stranger', larry: 'friend', lucy: 'friend', banana: 'friend' }
+  james: { harry: 'friend', lucy: 'friend', dobby: 'friend', lupin: 'stranger' },
+  harry: { james: 'friend', lucy: 'stranger', dobby: 'friend', lupin: 'stranger' },
+  lucy: { james: 'stranger', harry: 'friend', dobby: 'friend', lupin: 'friend' },
+  dobby: { james: 'friend', harry: 'stranger', lucy: 'stranger', lupin: 'stranger' },
+  lupin: { james: 'stranger', harry: 'friend', lucy: 'friend', dobby: 'friend' },
 };
 
 // Middleware function to authenticate the user
@@ -145,9 +145,9 @@ app.get('/nonFriends', authenticate, (req, res) => {
 
 // Start the server and listen for incoming requests on the specified port
 app.listen(port, () => {
-  console.log(relationships.james.larry);
-  const jamesToLarry = relationships.james.larry;
-console.log(jamesToLarry); // Output: 'friend'
+  console.log(relationships.james.harry);
+  const jamesToharry = relationships.james.harry;
+console.log(jamesToharry); // Output: 'friend'
 
 
 console.log(Object.keys(relationships.james).length); // Output: 4
