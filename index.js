@@ -16,7 +16,7 @@ const accounts = ['james', 'harry', 'lucy', 'dobby', 'lupin'];
 const credentials = {
   james: 'pwda', // james's password
   harry: 'pwdb', // harry's password
-  lucy: 'pwdc',  // lucy's password
+  lucy: 'pwdc',  // lucy's password password789
   dobby: 'password101', // dobby's password password101
   lupin: 'password202'   // lupin's password
 };
@@ -60,8 +60,20 @@ app.get('/relationships/:name', authenticate, (req, res) => {
   res.status(200).send(relationships[name]);
 });
 
-// Route to modify the relationship status between two users (PATCH request to /setstatus)
-app.patch('/setstatus', authenticate, (req, res) => {
+// // Route to modify the relationship status between two users (PATCH request to /setstatus)
+// app.patch('/setstatus', authenticate, (req, res) => {
+//   const { target, status } = req.body;
+//   const user = req.user;
+
+//   if (!accounts.includes(target)) {
+//     return res.status(400).send({ error: 'Invalid target.' });
+//   }
+
+//   relationships[user][target] = status;
+//   res.status(200).send(relationships);
+// });
+// Route to modify the relationship status between two users (POST request to /setstatus)
+app.post('/setstatus', authenticate, (req, res) => {
   const { target, status } = req.body;
   const user = req.user;
 
