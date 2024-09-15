@@ -60,30 +60,31 @@ app.get('/relationships/:name', authenticate, (req, res) => {
   res.status(200).send(relationships[name]);
 });
 
-// // Route to modify the relationship status between two users (PATCH request to /setstatus)
-// app.patch('/setstatus', authenticate, (req, res) => {
-//   const { target, status } = req.body;
-//   const user = req.user;
 
-//   if (!accounts.includes(target)) {
-//     return res.status(400).send({ error: 'Invalid target.' });
-//   }
-
-//   relationships[user][target] = status;
-//   res.status(200).send(relationships);
-// });
 // Route to modify the relationship status between two users (POST request to /setstatus)
+// Using POST instead of PATCH because Unity handled POST better than "app.patch('/setstatus', authenticate, (req, res) => {"
 app.post('/setstatus', authenticate, (req, res) => {
-  const { target, status } = req.body;
-  const user = req.user;
+  const { target, status } = req.body; // Extract target and new status from the request body
+  const user = req.user; // Get the authenticated user from the request
 
+  // Ensure that the target exists in the accounts list
   if (!accounts.includes(target)) {
-    return res.status(400).send({ error: 'Invalid target.' });
+    return res.status(400).send({ error: 'Invalid target.' }); // Send 400 error if target doesn't exist
   }
 
+  // Update the relationship status between the authenticated user and the target
   relationships[user][target] = status;
-  res.status(200).send(relationships);
+
+  // Check for mutual friendship
+  if (relationships[user][target] === 'friend' && relationships[target][user] === 'friend') {
+    return res.status(200).send({ message: "They are friends!", relationships });
+  }
+
+  // Send the updated relationships object if not mutual
+  res.status(200).send({ relationships });
 });
+
+
 
 // Route to reset all relationships to "stranger" for the authenticated user (POST request to /reset)
 app.post('/reset', authenticate, (req, res) => {
@@ -153,6 +154,86 @@ app.get('/nonFriends', authenticate, (req, res) => {
   // Send the non-friends list
   res.status(200).send({ nonFriends });
 });
+
+
+
+// Define a route to serve the HTML page
+app.get('/policy', (req, res) => {
+  res.send(`<!DOCTYPE html>
+    <html>
+    <head>
+    <title>My Game Privacy Policy for Play Store</title>
+    </head>
+    <body>
+    <h1>Privacy Policy for my games</h1>
+    
+    <p><strong>Effective Date: September 1, 2024</strong></p>
+    
+    <h2>1. Introduction</h2>
+    
+    <p>This Privacy Policy outlines how [Your Game Name] collects, uses, discloses, and protects your personal information when you use our mobile game application available on the Google Play Store.</p>
+    
+    <h2>2. Information We Collect</h2>
+    
+    <p>We may collect the following types of information:</p>
+    <ul>
+    <li><strong>Personal Information:</strong>   
+     Your name, email address, and device information.</li>
+    <li><strong>Usage Data:</strong> Information about your gameplay behavior, device information, and in-app purchases.</li>
+    <li><strong>Third-Party Data:</strong> Data from third-party platforms or services integrated into our game.</li>
+    </ul>
+    
+    <h2>3. How We Use Your Information</h2>
+    
+    <p>We use your information to:</p>
+    <ul>
+    <li>Provide the game and its features.</li>
+    <li>Process in-app purchases.</li>
+    <li>Provide customer support.</li>
+    <li>Improve the game's features and content.</li>
+    <li>Personalize your gaming experience.</li>
+    <li>Comply with legal obligations.</li>
+    </ul>
+    
+    <h2>4. Sharing Your Information</h2>
+    
+    <p>We may share your information with:</p>
+    <ul>
+    <li>Third-party service providers who help us operate the game.</li>
+    <li>Legal authorities as required by law.</li>
+    </ul>
+    
+    <h2>5. Data Security</h2>
+    
+    <p>We implement reasonable security measures to protect your personal information.</p>
+    
+    <h2>6. Children's Privacy</h2>
+    
+    <p>Our game is not intended for children under the age of 18. We do not knowingly collect personal information from children.</p>   
+    
+    
+    <h2>7. Your Choices</h2>
+    
+    <p>You have the following choices regarding your information:</p>
+    <ul>
+    <li>Manage your account settings and privacy preferences within the game.</li>
+    <li>Opt-out of marketing communications.</li>
+    <li>Request the deletion of your account and its associated data.</li>
+    </ul>
+    
+    <h2>8. Changes to This Privacy Policy</h2>
+    
+    <p>We may update this Privacy Policy from time to time.</p>
+    
+    <h2>9. Contact Us</h2>
+    
+    <p>If you have any questions about this Privacy Policy or our practices, please contact us at:</p>
+    
+    <p>My email: shashaankinbox@gmail.com</p>    
+    <p>By using our game, you consent to the collection and use of your information as described in this Privacy Policy.</p>  
+    </body>
+    </html>`);
+  });
 
 
 // Start the server and listen for incoming requests on the specified port
